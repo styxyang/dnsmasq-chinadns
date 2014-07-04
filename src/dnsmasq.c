@@ -81,6 +81,7 @@ int main (int argc, char **argv)
   umask(022); /* known umask, create leases and pid files as 0644 */
 
   read_opts(argc, argv, compile_opts);
+  my_syslog(LOG_INFO, _("address of daemon %p"), daemon);
  
   if (daemon->edns_pktsz < PACKETSZ)
     daemon->edns_pktsz = PACKETSZ;

@@ -530,6 +530,7 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
   char **sets = 0;
   int munged = 0, is_sign;
   size_t plen; 
+  int ea_ret = 0;
 
   (void)ad_reqd;
   (void) do_bit;
@@ -625,7 +626,8 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
 	  cache_secure = 0;
 	}
       
-      if (extract_addresses(header, n, daemon->namebuff, now, sets, is_sign, check_rebind, no_cache, cache_secure, &doctored))
+        ea_ret = extract_addresses(header, n, daemon->namebuff, now, sets, is_sign, check_rebind, no_cache, cache_secure, &doctored);
+        if (ea_ret)
 	{
 	  my_syslog(LOG_WARNING, _("possible DNS-rebind attack detected: %s"), daemon->namebuff);
 	  munged = 1;
@@ -667,6 +669,8 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
       header->nscount = htons(0);
       header->arcount = htons(0);
     }
+  if (ea_ret == -1)
+      return 65536;
   
   /* the bogus-nxdomain stuff, doctor and NXDOMAIN->NODATA munging can all elide
      sections of the packet. Find the new length here and put back pseudoheader
@@ -683,13 +687,16 @@ void reply_query(int fd, int family, time_t now)
   union mysockaddr serveraddr;
   struct frec *forward;
   socklen_t addrlen = sizeof(serveraddr);
-  ssize_t n = recvfrom(fd, daemon->packet, daemon->packet_buff_sz, 0, &serveraddr.sa, &addrlen);
+  ssize_t n;
   size_t nn;
   struct server *server;
   void *hash;
 #ifndef HAVE_DNSSEC
   unsigned int crc;
 #endif
+
+retry:
+  n = recvfrom(fd, daemon->packet, daemon->packet_buff_sz, 0, &serveraddr.sa, &addrlen);
 
   /* packet buffer overwritten */
   daemon->srv_save = NULL;
@@ -994,9 +1001,12 @@ void reply_query(int fd, int family, time_t now)
       else
 	header->hb4 &= ~HB4_CD;
       
-      if ((nn = process_reply(header, now, server, (size_t)n, check_rebind, no_cache_dnssec, cache_secure,
-			      forward->flags & FREC_AD_QUESTION, forward->flags & FREC_DO_QUESTION, 
-			      forward->flags & FREC_ADDED_PHEADER, forward->flags & FREC_HAS_SUBNET, &forward->source)))
+      nn = process_reply(header, now, server, (size_t)n, check_rebind, no_cache_dnssec, cache_secure,
+                         forward->flags & FREC_AD_QUESTION, forward->flags & FREC_DO_QUESTION, 
+                         forward->flags & FREC_ADDED_PHEADER, forward->flags & FREC_HAS_SUBNET, &forward->source);
+      if (nn == 65536)
+          goto retry;
+      if (nn)
 	{
 	  header->id = htons(forward->orig_id);
 	  header->hb4 |= HB4_RA; /* recursion if available */
