@@ -530,7 +530,7 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
   char **sets = 0;
   int munged = 0, is_sign;
   size_t plen; 
-  int ea_ret = 0;
+  int extract_addr_ret = 0;
 
   (void)ad_reqd;
   (void) do_bit;
@@ -625,9 +625,13 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
 	  SET_RCODE(header, NOERROR);
 	  cache_secure = 0;
 	}
-      
-        ea_ret = extract_addresses(header, n, daemon->namebuff, now, sets, is_sign, check_rebind, no_cache, cache_secure, &doctored);
-        if (ea_ret)
+
+        /* store the return value for later use
+           the special return value -1 is used to denote blacklisted IP */
+        extract_addr_ret = extract_addresses(header, n, daemon->namebuff, now,
+                                             sets, is_sign, check_rebind,
+                                             no_cache, cache_secure, &doctored);
+        if (extract_addr_ret)
 	{
 	  my_syslog(LOG_WARNING, _("possible DNS-rebind attack detected: %s"), daemon->namebuff);
 	  munged = 1;
@@ -669,8 +673,8 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
       header->nscount = htons(0);
       header->arcount = htons(0);
     }
-  if (ea_ret == -1)
-      return 65536;
+  if (extract_addr_ret == -1)
+      return (size_t)-1;
   
   /* the bogus-nxdomain stuff, doctor and NXDOMAIN->NODATA munging can all elide
      sections of the packet. Find the new length here and put back pseudoheader
@@ -1004,7 +1008,7 @@ retry:
       nn = process_reply(header, now, server, (size_t)n, check_rebind, no_cache_dnssec, cache_secure,
                          forward->flags & FREC_AD_QUESTION, forward->flags & FREC_DO_QUESTION, 
                          forward->flags & FREC_ADDED_PHEADER, forward->flags & FREC_HAS_SUBNET, &forward->source);
-      if (nn == 65536)
+      if (nn == (size_t)-1)
           goto retry;
       if (nn)
 	{
