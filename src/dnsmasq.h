@@ -536,6 +536,11 @@ struct resolvc {
   char *name;
 };
 
+struct blacklist {
+  unsigned char (*chinadns)[4];
+  char *name;
+};
+
 /* adn-hosts parms from command-line (also dhcp-hostsfile and dhcp-optsfile */
 #define AH_DIR      1
 #define AH_INACTIVE 2
@@ -891,6 +896,7 @@ extern struct daemon {
 
   unsigned int options, options2;
   struct resolvc default_resolv, *resolv_files;
+  struct blacklist blacklist;
   time_t last_resolv;
   char *servers_file;
   struct mx_srv_record *mxnames;

@@ -193,6 +193,14 @@ RESOLVFILE
 #   endif
 #endif
 
+#ifndef BLACKLIST
+#   if defined(__uClinux__)
+#      define BLACKLIST "/etc/config/blacklist_ip.conf"
+#   else
+#      define BLACKLIST "/etc/blacklist_ip.conf"
+#   endif
+#endif
+
 #ifndef RUNFILE
 #   if defined(__ANDROID__)
 #      define RUNFILE "/data/dnsmasq.pid"
