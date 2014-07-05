@@ -195,9 +195,9 @@ RESOLVFILE
 
 #ifndef BLACKLIST
 #   if defined(__uClinux__)
-#      define BLACKLIST "/etc/config/blacklist_ip.conf"
+#      define BLACKLIST "/etc/config/spurious_ips.conf"
 #   else
-#      define BLACKLIST "/etc/blacklist_ip.conf"
+#      define BLACKLIST "/etc/spurious_ips.conf"
 #   endif
 #endif
 

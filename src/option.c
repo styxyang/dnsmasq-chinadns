@@ -146,7 +146,7 @@ struct myoption {
 #define LOPT_DNSSEC_CHECK  334
 #define LOPT_LOCAL_SERVICE 335
 #define LOPT_DNSSEC_TIME   336
-#define LOPT_BLACKLIST     337
+#define LOPT_SPURIOUS_FILE 337
 
 #ifdef HAVE_GETOPT_LONG
 static const struct option opts[] =  
@@ -298,7 +298,7 @@ static const struct myoption opts[] =
     { "quiet-dhcp", 0, 0, LOPT_QUIET_DHCP },
     { "quiet-dhcp6", 0, 0, LOPT_QUIET_DHCP6 },
     { "quiet-ra", 0, 0, LOPT_QUIET_RA },
-    { "blacklist-file", 2, 0, LOPT_BLACKLIST },
+    { "spurious-ip-file", 2, 0, LOPT_SPURIOUS_FILE },
     { NULL, 0, 0, 0 }
   };
 
@@ -3818,7 +3818,7 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
       }
 #endif
 
-    case LOPT_BLACKLIST:
+    case LOPT_SPURIOUS_FILE:
       /* fprintf(stderr, "blacklist file changed to %s\n", arg); */
       daemon->blacklist.name = arg;
       break;
