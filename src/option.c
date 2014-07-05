@@ -146,6 +146,7 @@ struct myoption {
 #define LOPT_DNSSEC_CHECK  334
 #define LOPT_LOCAL_SERVICE 335
 #define LOPT_DNSSEC_TIME   336
+#define LOPT_BLACKLIST     337
 
 #ifdef HAVE_GETOPT_LONG
 static const struct option opts[] =  
@@ -297,6 +298,7 @@ static const struct myoption opts[] =
     { "quiet-dhcp", 0, 0, LOPT_QUIET_DHCP },
     { "quiet-dhcp6", 0, 0, LOPT_QUIET_DHCP6 },
     { "quiet-ra", 0, 0, LOPT_QUIET_RA },
+    { "blacklist-file", 2, 0, LOPT_BLACKLIST },
     { NULL, 0, 0, 0 }
   };
 
@@ -4258,6 +4260,7 @@ void read_opts(int argc, char **argv, char *compile_opts)
   daemon->dhcp_server_port = DHCP_SERVER_PORT;
   daemon->default_resolv.is_default = 1;
   daemon->default_resolv.name = RESOLVFILE;
+  daemon->blacklist.name = BLACKLIST;
   daemon->resolv_files = &daemon->default_resolv;
   daemon->username = CHUSER;
   daemon->runfile =  RUNFILE;
@@ -4485,6 +4488,36 @@ void read_opts(int argc, char **argv, char *compile_opts)
      as a system default to keep otherwise unconfigured installations safe. */
   if (daemon->if_names || daemon->if_except || daemon->if_addrs || daemon->authserver)
     reset_option_bool(OPT_LOCAL_SERVICE); 
+
+  if (daemon->blacklist.name) {
+    char *line;
+    FILE *f;
+    int i = 0;
+
+    if (!(f = fopen(daemon->blacklist.name, "r")))
+      die(_("failed to read %s: %s"), daemon->blacklist.name, EC_FILE);
+
+    /* allocat memory for the list */
+    daemon->blacklist.chinadns = opt_malloc(4 * sizeof(unsigned char) * 1024);
+
+    while ((line = fgets(buff, MAXDNAME, f)))
+      {
+        char *token = strtok(line, ".");
+        int j = 0;
+        if (!token || strpbrk(token, " \t\n\r") != NULL)
+          {
+            i++;
+            continue;
+          }
+
+        do
+          {
+            daemon->blacklist.chinadns[i][j++] = atoi(token);
+            my_syslog(LOG_INFO, _("%d"), atoi(token));
+          }
+        while ((token = strtok(NULL, ".")) && j < 4);
+      }
+  }
 
   if (testmode)
     {
