@@ -76,9 +76,13 @@ you can test it with command
     Address: 74.125.31.113
 
 To examine the query process (use Debian as the example),
-uncommnent `log-queries` in `/etc/dnsmasq.conf`, use the command (Debian):
+uncommnent `log-queries` in `/etc/dnsmasq.conf` and watch syslog with command:
 
     sudo tail -f /var/log/syslog
+
+Or manually start dnsmasq with the following options:
+
+    sudo dnsmasq -q -d
 
 and you may observe logs like
 
