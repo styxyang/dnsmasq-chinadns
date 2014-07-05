@@ -147,6 +147,7 @@ struct myoption {
 #define LOPT_LOCAL_SERVICE 335
 #define LOPT_DNSSEC_TIME   336
 #define LOPT_SPURIOUS_FILE 337
+#define LOPT_SPURIOUS_IP   338
 
 #ifdef HAVE_GETOPT_LONG
 static const struct option opts[] =  
@@ -299,6 +300,7 @@ static const struct myoption opts[] =
     { "quiet-dhcp6", 0, 0, LOPT_QUIET_DHCP6 },
     { "quiet-ra", 0, 0, LOPT_QUIET_RA },
     { "spurious-ip-file", 2, 0, LOPT_SPURIOUS_FILE },
+    { "spurious-ip", 1, 0, LOPT_SPURIOUS_IP },
     { NULL, 0, 0, 0 }
   };
 
@@ -3822,6 +3824,29 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
       /* fprintf(stderr, "blacklist file changed to %s\n", arg); */
       daemon->blacklist.name = arg;
       break;
+
+    case LOPT_SPURIOUS_IP:
+      {
+        char *token = strtok(arg, ".");
+        int j = 0;
+        int i = daemon->blacklist.nr_entires;
+
+        if (!daemon->blacklist.chinadns)
+          daemon->blacklist.chinadns = opt_malloc(4 * sizeof(unsigned char) * 1024);
+
+        if (!token || strpbrk(token, " \t\n\r") != NULL)
+            break;
+
+        do
+          {
+            daemon->blacklist.chinadns[i][j++] = atoi(token);
+            /* my_syslog(LOG_INFO, _("%d"), atoi(token)); */
+          }
+        while ((token = strtok(NULL, ".")) && j < 4);
+        daemon->blacklist.nr_entires++;
+      }
+      my_syslog(LOG_INFO, _("add spurious-ip %s"), arg);
+      break;
 		
     default:
       ret_err(_("unsupported option (check that dnsmasq was compiled with DHCP/TFTP/DNSSEC/DBus support)"));
@@ -4266,6 +4291,8 @@ void read_opts(int argc, char **argv, char *compile_opts)
   daemon->default_resolv.is_default = 1;
   daemon->default_resolv.name = RESOLVFILE;
   daemon->blacklist.name = NULL;
+  daemon->blacklist.nr_entires = 0;
+  daemon->blacklist.chinadns = NULL;
   daemon->resolv_files = &daemon->default_resolv;
   daemon->username = CHUSER;
   daemon->runfile =  RUNFILE;
@@ -4502,16 +4529,15 @@ void read_opts(int argc, char **argv, char *compile_opts)
     if ((f = fopen(daemon->blacklist.name, "r")))
       {
         /* allocat memory for the list */
-        daemon->blacklist.chinadns = opt_malloc(4 * sizeof(unsigned char) * 1024);
+        if (!daemon->blacklist.chinadns)
+          daemon->blacklist.chinadns = opt_malloc(4 * sizeof(unsigned char) * 1024);
 
         while ((line = fgets(buff, MAXDNAME, f)))
           {
             char *token = strtok(line, ".");
             int j = 0;
             if (!token || strpbrk(token, " \t\n\r") != NULL)
-              {
-                continue;
-              }
+              continue;
 
             do
               {
