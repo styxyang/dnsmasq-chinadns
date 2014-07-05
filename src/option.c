@@ -4265,7 +4265,7 @@ void read_opts(int argc, char **argv, char *compile_opts)
   daemon->dhcp_server_port = DHCP_SERVER_PORT;
   daemon->default_resolv.is_default = 1;
   daemon->default_resolv.name = RESOLVFILE;
-  daemon->blacklist.name = BLACKLIST;
+  daemon->blacklist.name = NULL;
   daemon->resolv_files = &daemon->default_resolv;
   daemon->username = CHUSER;
   daemon->runfile =  RUNFILE;
@@ -4500,30 +4500,32 @@ void read_opts(int argc, char **argv, char *compile_opts)
     int i = 0;
 
     if (!(f = fopen(daemon->blacklist.name, "r")))
-      die(_("failed to read %s: %s"), daemon->blacklist.name, EC_FILE);
-
-    /* allocat memory for the list */
-    daemon->blacklist.chinadns = opt_malloc(4 * sizeof(unsigned char) * 1024);
-
-    while ((line = fgets(buff, MAXDNAME, f)))
+      fprintf(stderr, "failed to read %s", daemon->blacklist.name);
+    else
       {
-        char *token = strtok(line, ".");
-        int j = 0;
-        if (!token || strpbrk(token, " \t\n\r") != NULL)
-          {
-            continue;
-          }
+        /* allocat memory for the list */
+        daemon->blacklist.chinadns = opt_malloc(4 * sizeof(unsigned char) * 1024);
 
-        do
+        while ((line = fgets(buff, MAXDNAME, f)))
           {
-            daemon->blacklist.chinadns[i][j++] = atoi(token);
-            /* my_syslog(LOG_INFO, _("%d"), atoi(token)); */
+            char *token = strtok(line, ".");
+            int j = 0;
+            if (!token || strpbrk(token, " \t\n\r") != NULL)
+              {
+                continue;
+              }
+
+            do
+              {
+                daemon->blacklist.chinadns[i][j++] = atoi(token);
+                /* my_syslog(LOG_INFO, _("%d"), atoi(token)); */
+              }
+            while ((token = strtok(NULL, ".")) && j < 4);
+            i++;
           }
-        while ((token = strtok(NULL, ".")) && j < 4);
-        i++;
+        daemon->blacklist.nr_entires = i;
+        my_syslog(LOG_INFO, _("totoal %d entries"), i);
       }
-    daemon->blacklist.nr_entires = i;
-    my_syslog(LOG_INFO, _("totoal %d entries"), i);
   }
 
   if (testmode)

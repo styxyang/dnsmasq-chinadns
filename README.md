@@ -19,10 +19,13 @@ Install
   Then use command `sudo service dnsmasq restart` to restart the service. Other distributions may
   have similar configurations
 
-Patch
+Configuration
 -------
 
-Patch file will be available later on.
+There is a parameter I enable users to set in `/etc/dnsmasq.conf`, `spurious-ip-file`.
+Without explicitly specify it, the filter function will not be enabled.
+The default setting is recommended as `spurious-ip-file=/etc/spurious_ips.conf` using
+the file `spurious_ips.conf` in the project directory.
 
 Usage
 -------
