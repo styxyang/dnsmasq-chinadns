@@ -3832,7 +3832,7 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
         int i = daemon->blacklist.nr_entires;
 
         if (!daemon->blacklist.chinadns)
-          daemon->blacklist.chinadns = opt_malloc(4 * sizeof(unsigned char) * 1024);
+          daemon->blacklist.chinadns = opt_malloc(4 * sizeof(unsigned char) * 2048);
 
         if (!token || strpbrk(token, " \t\n\r") != NULL)
             break;
@@ -3844,8 +3844,12 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
           }
         while ((token = strtok(NULL, ".")) && j < 4);
         daemon->blacklist.nr_entires++;
+        my_syslog(LOG_INFO, _("add spurious-ip %d.%d.%d.%d"),
+                  daemon->blacklist.chinadns[i][0],
+                  daemon->blacklist.chinadns[i][1],
+                  daemon->blacklist.chinadns[i][2],
+                  daemon->blacklist.chinadns[i][3]);
       }
-      my_syslog(LOG_INFO, _("add spurious-ip %s"), arg);
       break;
 		
     default:
@@ -4530,7 +4534,7 @@ void read_opts(int argc, char **argv, char *compile_opts)
       {
         /* allocat memory for the list */
         if (!daemon->blacklist.chinadns)
-          daemon->blacklist.chinadns = opt_malloc(4 * sizeof(unsigned char) * 1024);
+          daemon->blacklist.chinadns = opt_malloc(4 * sizeof(unsigned char) * 2048);
 
         while ((line = fgets(buff, MAXDNAME, f)))
           {

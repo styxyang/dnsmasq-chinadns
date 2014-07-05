@@ -537,7 +537,7 @@ struct resolvc {
 };
 
 struct blacklist {
-  unsigned char (*chinadns)[4];
+  u8 (*chinadns)[4];
   int nr_entires;
   char *name;
 };
