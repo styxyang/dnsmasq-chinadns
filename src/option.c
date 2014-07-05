@@ -3822,7 +3822,7 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
 
     case LOPT_SPURIOUS_FILE:
       /* fprintf(stderr, "blacklist file changed to %s\n", arg); */
-      daemon->blacklist.name = arg;
+      daemon->blacklist.name = opt_string_alloc(arg);
       break;
 
     case LOPT_SPURIOUS_IP:
