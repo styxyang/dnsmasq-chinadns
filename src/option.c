@@ -4499,9 +4499,7 @@ void read_opts(int argc, char **argv, char *compile_opts)
     FILE *f;
     int i = 0;
 
-    if (!(f = fopen(daemon->blacklist.name, "r")))
-      fprintf(stderr, "failed to read %s", daemon->blacklist.name);
-    else
+    if ((f = fopen(daemon->blacklist.name, "r")))
       {
         /* allocat memory for the list */
         daemon->blacklist.chinadns = opt_malloc(4 * sizeof(unsigned char) * 1024);
