@@ -233,6 +233,17 @@ void *safe_malloc(size_t size)
   return ret;
 }    
 
+/* for use during startup */
+void *safe_realloc(void *p, size_t size)
+{
+  void *ret = realloc(p, size);
+  
+  if (!ret)
+    die(_("realloc could not get memory"), NULL, EC_NOMEM);
+     
+  return ret;
+}    
+
 void safe_pipe(int *fd, int read_noblock)
 {
   if (pipe(fd) == -1 || 
