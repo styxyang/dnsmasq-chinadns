@@ -4506,17 +4506,19 @@ void read_opts(int argc, char **argv, char *compile_opts)
         int j = 0;
         if (!token || strpbrk(token, " \t\n\r") != NULL)
           {
-            i++;
             continue;
           }
 
         do
           {
             daemon->blacklist.chinadns[i][j++] = atoi(token);
-            my_syslog(LOG_INFO, _("%d"), atoi(token));
+            /* my_syslog(LOG_INFO, _("%d"), atoi(token)); */
           }
         while ((token = strtok(NULL, ".")) && j < 4);
+        i++;
       }
+    daemon->blacklist.nr_entires = i;
+    my_syslog(LOG_INFO, _("totoal %d entries"), i);
   }
 
   if (testmode)
