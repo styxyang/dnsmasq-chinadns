@@ -894,8 +894,8 @@ static int find_soa(struct dns_header *header, size_t qlen, char *name, int *doc
 
 static int in_chinadns(struct in_addr addr) {
   int i;
-  for (i = 0; i < daemon->blacklist.nr_entires; i++) {
-    if (addr.s_addr == *(unsigned int *)(daemon->blacklist.chinadns[i]))
+  for (i = 0; i < daemon->spurious.nr_entry; i++) {
+    if (addr.s_addr == *(unsigned int *)(daemon->spurious.ip[i]))
       return 1;
   }
   return 0;

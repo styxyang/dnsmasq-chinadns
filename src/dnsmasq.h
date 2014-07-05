@@ -536,9 +536,10 @@ struct resolvc {
   char *name;
 };
 
-struct blacklist {
-  u8 (*chinadns)[4];
-  int nr_entires;
+struct spurious_ip {
+  u8 (*ip)[4];
+  int max_entry; /* maximum entries to hold in ip array. */
+  int nr_entry;
   char *name;
 };
 
@@ -897,7 +898,7 @@ extern struct daemon {
 
   unsigned int options, options2;
   struct resolvc default_resolv, *resolv_files;
-  struct blacklist blacklist;
+  struct spurious_ip spurious;
   time_t last_resolv;
   char *servers_file;
   struct mx_srv_record *mxnames;
@@ -1132,6 +1133,7 @@ int legal_hostname(char *c);
 char *canonicalise(char *s, int *nomem);
 unsigned char *do_rfc1035_name(unsigned char *p, char *sval);
 void *safe_malloc(size_t size);
+void *safe_realloc(void *p, size_t size);
 void safe_pipe(int *fd, int read_noblock);
 void *whine_malloc(size_t size);
 int sa_len(union mysockaddr *addr);

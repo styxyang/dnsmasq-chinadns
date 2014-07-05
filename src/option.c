@@ -699,6 +699,29 @@ static void do_usage(void)
     }
 }
 
+static void add_spurious_ip(char *s)
+{
+  /* skip empty string. */
+  char *token = strtok(s, ".");
+  if (!token || strpbrk(s, " \t\n\r") != NULL)
+    return;
+
+  struct spurious_ip *sp = &daemon->spurious;
+  if (sp->ip == NULL || sp->nr_entry == sp->max_entry)
+    {
+      sp->max_entry *= 2;
+      sp->ip = safe_realloc(sp->ip, sp->max_entry * sizeof(sp->ip[0]));
+    }
+
+  int j = 0;
+  do
+    {
+      sp->ip[sp->nr_entry][j++] = atoi(token);
+      /* my_syslog(LOG_INFO, _("%d"), atoi(token)); */
+    } while ((token = strtok(NULL, ".")) && j < 4);
+  sp->nr_entry++;
+}
+
 #define ret_err(x) do { strcpy(errstr, (x)); return 0; } while (0)
 
 char *parse_server(char *arg, union mysockaddr *addr, union mysockaddr *source_addr, char *interface, int *flags)
@@ -3821,35 +3844,17 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
 #endif
 
     case LOPT_SPURIOUS_FILE:
-      /* fprintf(stderr, "blacklist file changed to %s\n", arg); */
-      daemon->blacklist.name = opt_string_alloc(arg);
+      daemon->spurious.name = opt_string_alloc(arg);
       break;
 
     case LOPT_SPURIOUS_IP:
-      {
-        char *token = strtok(arg, ".");
-        int j = 0;
-        int i = daemon->blacklist.nr_entires;
-
-        if (!daemon->blacklist.chinadns)
-          daemon->blacklist.chinadns = opt_malloc(4 * sizeof(unsigned char) * 2048);
-
-        if (!token || strpbrk(token, " \t\n\r") != NULL)
-            break;
-
-        do
-          {
-            daemon->blacklist.chinadns[i][j++] = atoi(token);
-            /* my_syslog(LOG_INFO, _("%d"), atoi(token)); */
-          }
-        while ((token = strtok(NULL, ".")) && j < 4);
-        daemon->blacklist.nr_entires++;
-        my_syslog(LOG_INFO, _("add spurious-ip %d.%d.%d.%d"),
-                  daemon->blacklist.chinadns[i][0],
-                  daemon->blacklist.chinadns[i][1],
-                  daemon->blacklist.chinadns[i][2],
-                  daemon->blacklist.chinadns[i][3]);
-      }
+      i = daemon->spurious.nr_entry;
+      add_spurious_ip(arg);
+      my_syslog(LOG_INFO, _("add spurious-ip %d.%d.%d.%d\n"),
+        daemon->spurious.ip[i][0],
+        daemon->spurious.ip[i][1],
+        daemon->spurious.ip[i][2],
+        daemon->spurious.ip[i][3]);
       break;
 		
     default:
@@ -4180,7 +4185,24 @@ void read_servers_file(void)
   
   read_file(daemon->servers_file, f, LOPT_REV_SERV);
 }
- 
+
+void read_spurious_ip_file(char *buff)
+{
+  char *line = NULL;
+  FILE *f = NULL;
+
+  if (!(f = fopen(daemon->spurious.name, "r")))
+    {
+      my_syslog(LOG_ERR, _("cannot read %s: %s"), daemon->spurious.name, strerror(errno));
+      return;
+    }
+
+  while ((line = fgets(buff, MAXDNAME, f)))
+    add_spurious_ip(line);
+
+  my_syslog(LOG_INFO, _("load %d spurious ip"), daemon->spurious.nr_entry);
+  fclose(f);
+}
 
 #ifdef HAVE_DHCP
 void reread_dhcp(void)
@@ -4294,9 +4316,7 @@ void read_opts(int argc, char **argv, char *compile_opts)
   daemon->dhcp_server_port = DHCP_SERVER_PORT;
   daemon->default_resolv.is_default = 1;
   daemon->default_resolv.name = RESOLVFILE;
-  daemon->blacklist.name = NULL;
-  daemon->blacklist.nr_entires = 0;
-  daemon->blacklist.chinadns = NULL;
+  daemon->spurious.max_entry = 32;
   daemon->resolv_files = &daemon->default_resolv;
   daemon->username = CHUSER;
   daemon->runfile =  RUNFILE;
@@ -4525,36 +4545,13 @@ void read_opts(int argc, char **argv, char *compile_opts)
   if (daemon->if_names || daemon->if_except || daemon->if_addrs || daemon->authserver)
     reset_option_bool(OPT_LOCAL_SERVICE); 
 
-  if (daemon->blacklist.name) {
-    char *line;
-    FILE *f;
-    int i = 0;
+  if (daemon->spurious.name != NULL)
+    read_spurious_ip_file(buff);
 
-    if ((f = fopen(daemon->blacklist.name, "r")))
-      {
-        /* allocat memory for the list */
-        if (!daemon->blacklist.chinadns)
-          daemon->blacklist.chinadns = opt_malloc(4 * sizeof(unsigned char) * 2048);
-
-        while ((line = fgets(buff, MAXDNAME, f)))
-          {
-            char *token = strtok(line, ".");
-            int j = 0;
-            if (!token || strpbrk(token, " \t\n\r") != NULL)
-              continue;
-
-            do
-              {
-                daemon->blacklist.chinadns[i][j++] = atoi(token);
-                /* my_syslog(LOG_INFO, _("%d"), atoi(token)); */
-              }
-            while ((token = strtok(NULL, ".")) && j < 4);
-            i++;
-          }
-        daemon->blacklist.nr_entires = i;
-        my_syslog(LOG_INFO, _("totoal %d entries"), i);
-      }
-  }
+  /* release extra memory allocated */
+  daemon->spurious.ip = safe_realloc(daemon->spurious.ip,
+    daemon->spurious.nr_entry * sizeof(daemon->spurious.ip[0]));
+  daemon->spurious.max_entry = daemon->spurious.nr_entry;
 
   if (testmode)
     {

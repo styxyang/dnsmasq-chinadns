@@ -193,11 +193,11 @@ RESOLVFILE
 #   endif
 #endif
 
-#ifndef BLACKLIST
+#ifndef SPURIOUS_IPS
 #   if defined(__uClinux__)
-#      define BLACKLIST "/etc/config/spurious_ips.conf"
+#      define SPURIOUS_IPS "/etc/config/spurious_ips.conf"
 #   else
-#      define BLACKLIST "/etc/spurious_ips.conf"
+#      define SPURIOUS_IPS "/etc/spurious_ips.conf"
 #   endif
 #endif
 

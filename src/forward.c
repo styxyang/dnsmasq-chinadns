@@ -627,7 +627,7 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
 	}
 
         /* store the return value for later use
-           the special return value -1 is used to denote blacklisted IP */
+           the special return value -1 is used to denote spurious IP */
         extract_addr_ret = extract_addresses(header, n, daemon->namebuff, now,
                                              sets, is_sign, check_rebind,
                                              no_cache, cache_secure, &doctored);
