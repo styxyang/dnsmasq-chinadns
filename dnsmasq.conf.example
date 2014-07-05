@@ -25,6 +25,13 @@
 #conf-file=%%PREFIX%%/share/dnsmasq/trust-anchors.conf
 #dnssec
 
+# Specify file containing spurious IP. dnsmasq will ignore DNS
+# replies with these IP.
+#spurious-ip-file=/etc/spurious_ips.conf
+# Or specify IP address one by one.
+#spurious-ip = 64.33.99.47
+#spurious-ip = 4.36.66.178
+
 # Replies which are not DNSSEC signed may be legitimate, because the domain
 # is unsigned, or may be forgeries. Setting this option tells dnsmasq to
 # check that an unsigned reply is OK, by finding a secure proof that a DS 

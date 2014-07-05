@@ -10,6 +10,7 @@ Install
 
         git clone https://github.com/styx-hy/dnsmasq-chinadns.git
         cd dnsmasq-chinadns.git
+        # Edit Makefile to change install PREFIX.
         make
 
   I suggest you use the system default settings for dnsmasq.
@@ -17,15 +18,36 @@ Install
   For example, on Debian GNU/Linux,
   simply change `DAEMON` variable in `/etc/init.d/dnsmasq` to the `/path/of/dnsmasq-chinadns/src/dnsmasq`.
   Then use command `sudo service dnsmasq restart` to restart the service. Other distributions may
-  have similar configurations
+  have similar configurations.
 
 Configuration
 -------
 
-There is a parameter I enable users to set in `/etc/dnsmasq.conf`, `spurious-ip-file`.
-Without explicitly specify it, the filter function will not be enabled.
-The default setting is recommended as `spurious-ip-file=/etc/spurious_ips.conf` using
-the file `spurious_ips.conf` in the project directory.
+Here's a simple configuration to use, you can save it as `/etc/dnsmasq.conf`.
+
+    # File containing name server list.
+    resolv-file=/etc/dnsmasq.resolv.conf
+
+    # Listen the following address, repeat to specify more.
+    listen-address=127.0.0.1
+
+    # File listing spurious IP.
+    spurious-ip-file=/etc/spurious_ips.conf
+    # Or specify IP address one by one.
+    #spurious-ip = 64.33.99.47
+    #spurious-ip = 4.36.66.178
+
+    # Important for CDN to work correctly.
+    strict-order
+
+    cache-size=512
+
+Without explicitly specifing `spurious-ip` or `spurious-ip-file`, the filter function will not be enabled.
+
+Example files:
+
+- [`dnsmasq.resolv.conf`](dnsmasq.resolv.conf) for `resolv-conf` option
+- [`spurious_ips.conf`](spurious_ips.conf) for `spurious-ip-file` option
 
 Usage
 -------
