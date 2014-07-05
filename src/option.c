@@ -3817,6 +3817,11 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
 	break;
       }
 #endif
+
+    case LOPT_BLACKLIST:
+      /* fprintf(stderr, "blacklist file changed to %s\n", arg); */
+      daemon->blacklist.name = arg;
+      break;
 		
     default:
       ret_err(_("unsupported option (check that dnsmasq was compiled with DHCP/TFTP/DNSSEC/DBus support)"));
