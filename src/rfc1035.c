@@ -892,13 +892,10 @@ static int find_soa(struct dns_header *header, size_t qlen, char *name, int *doc
   return minttl;
 }
 
-static int in_chinadns(struct in_addr addr) {
-  int i;
-  for (i = 0; i < daemon->spurious.nr_entry; i++) {
-    if (addr.s_addr == *(unsigned int *)(daemon->spurious.ip[i]))
-      return 1;
-  }
-  return 0;
+static int is_spurious(struct in_addr addr) {
+  struct spurious_ip *sp = &daemon->spurious;
+  return bsearch(&addr.s_addr, sp->ip, sp->nr_entry,
+  	sizeof(sp->ip[0]), cmp_int32) != NULL;
 }
 
 /* Note that the following code can create CNAME chains that don't point to a real record,
@@ -1119,7 +1116,7 @@ int extract_addresses(struct dns_header *header, size_t qlen, char *name, time_t
 #endif
 		      
 		      /* before insert it into cache, check if it is a fake addr */
-                      if (in_chinadns(addr.addr.addr4)) {
+                      if (is_spurious(addr.addr.addr4)) {
                         my_syslog(LOG_WARNING, _("spurious IP: %d.%d.%d.%d"),
                                   ((u8 *)&addr.addr.addr4)[0],
                                   ((u8 *)&addr.addr.addr4)[1],

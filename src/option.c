@@ -4548,10 +4548,12 @@ void read_opts(int argc, char **argv, char *compile_opts)
   if (daemon->spurious.name != NULL)
     read_spurious_ip_file(buff);
 
+  struct spurious_ip *sp = &daemon->spurious;
   /* release extra memory allocated */
-  daemon->spurious.ip = safe_realloc(daemon->spurious.ip,
-    daemon->spurious.nr_entry * sizeof(daemon->spurious.ip[0]));
-  daemon->spurious.max_entry = daemon->spurious.nr_entry;
+  sp->ip = safe_realloc(sp->ip, sp->nr_entry * sizeof(sp->ip[0]));
+  sp->max_entry = sp->nr_entry;
+  /* sort ip for bsearch */
+  qsort(sp->ip, sp->nr_entry, sizeof(sp->ip[0]), cmp_int32);
 
   if (testmode)
     {

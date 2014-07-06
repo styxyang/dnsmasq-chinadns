@@ -1160,6 +1160,7 @@ int read_write(int fd, unsigned char *packet, int size, int rw);
 
 int wildcard_match(const char* wildcard, const char* match);
 int wildcard_matchn(const char* wildcard, const char* match, int num);
+int cmp_int32(const void *a, const void *b);
 
 /* log.c */
 void die(char *message, char *arg1, int exit_code);
