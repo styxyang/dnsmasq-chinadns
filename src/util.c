@@ -637,5 +637,10 @@ int cmp_int32(const void *a, const void *b)
 {
   const int32_t *ia = (int32_t *)a;
   const int32_t *ib = (int32_t *)b;
-  return *ia - *ib;
+
+  if (*ia > *ib)
+      return 1;
+  if (*ia == *ib)
+      return 0;
+  return -1;
 }
