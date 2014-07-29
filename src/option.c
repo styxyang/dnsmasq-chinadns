@@ -146,8 +146,9 @@ struct myoption {
 #define LOPT_DNSSEC_CHECK  334
 #define LOPT_LOCAL_SERVICE 335
 #define LOPT_DNSSEC_TIME   336
-#define LOPT_SPURIOUS_FILE 337
-#define LOPT_SPURIOUS_IP   338
+#define LOPT_LOOP_DETECT   337
+#define LOPT_SPURIOUS_FILE 338
+#define LOPT_SPURIOUS_IP   339
 
 #ifdef HAVE_GETOPT_LONG
 static const struct option opts[] =  
@@ -299,6 +300,7 @@ static const struct myoption opts[] =
     { "quiet-dhcp", 0, 0, LOPT_QUIET_DHCP },
     { "quiet-dhcp6", 0, 0, LOPT_QUIET_DHCP6 },
     { "quiet-ra", 0, 0, LOPT_QUIET_RA },
+    { "dns-loop-detect", 0, 0, LOPT_LOOP_DETECT },
     { "spurious-ip-file", 2, 0, LOPT_SPURIOUS_FILE },
     { "spurious-ip", 1, 0, LOPT_SPURIOUS_IP },
     { NULL, 0, 0, 0 }
@@ -458,6 +460,7 @@ static struct {
   { LOPT_QUIET_DHCP6, OPT_QUIET_DHCP6, NULL, gettext_noop("Do not log routine DHCPv6."), NULL },
   { LOPT_QUIET_RA, OPT_QUIET_RA, NULL, gettext_noop("Do not log RA."), NULL },
   { LOPT_LOCAL_SERVICE, OPT_LOCAL_SERVICE, NULL, gettext_noop("Accept queries only from directly-connected networks"), NULL },
+  { LOPT_LOOP_DETECT, OPT_LOOP_DETECT, NULL, gettext_noop("Detect and remove DNS forwarding loops"), NULL },
   { LOPT_SPURIOUS_FILE, ARG_DUP, "<path>", gettext_noop("Specify path to spurious-ip file."), NULL }, 
   { LOPT_SPURIOUS_IP, ARG_DUP, "<ipaddr>", gettext_noop("Specify spurious ip."), NULL },
   { 0, 0, NULL, NULL, NULL }
@@ -2200,6 +2203,9 @@ static int one_opt(int option, char *arg, char *errstr, char *gen_err, int comma
 	  {
 	    newlist = opt_malloc(sizeof(struct server));
 	    memset(newlist, 0, sizeof(struct server));
+#ifdef HAVE_LOOP
+	    newlist->uid = rand32();
+#endif
 	  }
 	
 	if (servers_only && option == 'S')
@@ -4330,6 +4336,7 @@ void read_opts(int argc, char **argv, char *compile_opts)
   daemon->soa_refresh = SOA_REFRESH;
   daemon->soa_retry = SOA_RETRY;
   daemon->soa_expiry = SOA_EXPIRY;
+
   add_txt("version.bind", "dnsmasq-" VERSION, 0 );
   add_txt("authors.bind", "Simon Kelley", 0);
   add_txt("copyright.bind", COPYRIGHT, 0);

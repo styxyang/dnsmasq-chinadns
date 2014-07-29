@@ -80,7 +80,9 @@ int main (int argc, char **argv)
   sigaction(SIGPIPE, &sigact, NULL);
 
   umask(022); /* known umask, create leases and pid files as 0644 */
-
+ 
+  rand_init(); /* Must precede read_opts() */
+  
   read_opts(argc, argv, compile_opts);
   my_syslog(LOG_INFO, _("address of daemon %p"), daemon);
  
@@ -187,7 +189,10 @@ int main (int argc, char **argv)
     die(_("authoritative DNS not available: set HAVE_AUTH in src/config.h"), NULL, EC_BADCONF);
 #endif
 
-  rand_init();
+#ifndef HAVE_LOOP
+  if (option_bool(OPT_LOOP_DETECT))
+    die(_("Loop detection not available: set HAVE_LOOP in src/config.h"), NULL, EC_BADCONF);
+#endif
   
   now = dnsmasq_time();
 
