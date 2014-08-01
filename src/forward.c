@@ -682,6 +682,8 @@ static size_t process_reply(struct dns_header *header, time_t now, struct server
   return resize_packet(header, n, pheader, plen);
 }
 
+#define MAX_RETRY 8
+
 /* sets new last_server */
 void reply_query(int fd, int family, time_t now)
 {
@@ -695,6 +697,7 @@ void reply_query(int fd, int family, time_t now)
   size_t nn;
   struct server *server;
   void *hash;
+  int retry_cnt = 0;
 #ifndef HAVE_DNSSEC
   unsigned int crc;
 #endif
@@ -1008,8 +1011,10 @@ retry:
       nn = process_reply(header, now, server, (size_t)n, check_rebind, no_cache_dnssec, cache_secure,
                          forward->flags & FREC_AD_QUESTION, forward->flags & FREC_DO_QUESTION, 
                          forward->flags & FREC_ADDED_PHEADER, forward->flags & FREC_HAS_SUBNET, &forward->source);
-      if (nn == (size_t)-1)
+
+      if ((nn == (size_t)-1) && (retry_cnt++ < MAX_RETRY))
           goto retry;
+
       if (nn)
 	{
 	  header->id = htons(forward->orig_id);
