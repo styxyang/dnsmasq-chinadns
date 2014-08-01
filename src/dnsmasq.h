@@ -576,6 +576,9 @@ struct hostsfile {
 #define FREC_DO_QUESTION       64
 #define FREC_ADDED_PHEADER    128
 #define FREC_CHECK_NOSIGN     256
+#define FREC_RECURSIVE        512
+
+#define FREC_RECURSIVE_BIT      9
 
 #ifdef HAVE_DNSSEC
 #define HASH_SIZE 20 /* SHA-1 digest size */

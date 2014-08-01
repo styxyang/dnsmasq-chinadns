@@ -338,6 +338,9 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
 	  memcpy(forward->hash, hash, HASH_SIZE);
 	  forward->forwardall = 0;
 	  forward->flags = 0;
+          if (header->hb3 & HB3_RD)
+            forward->flags |= FREC_RECURSIVE;
+          /* my_syslog(LOG_WARNING, _("Forward original HB3_RD: %d"), header->hb3 & HB3_RD); */
 	  if (norebind)
 	    forward->flags |= FREC_NOREBIND;
 	  if (header->hb4 & HB4_CD)
@@ -794,6 +797,17 @@ retry:
   if (forward->forwardall == 0 || --forward->forwardall == 1 || RCODE(header) != SERVFAIL)
     {
       int check_rebind = 0, no_cache_dnssec = 0, cache_secure = 0;
+
+      /* the recursive desired bit has been changed by mitm */
+      if (((forward->flags & FREC_RECURSIVE) >> FREC_RECURSIVE_BIT)
+          ^ (header->hb3 & HB3_RD)) {
+        my_syslog(LOG_WARNING, _("flags: %d, hb3_rd: %d"),
+                  (forward->flags & FREC_RECURSIVE), (header->hb3 & HB3_RD));
+        if (retry_cnt++ < MAX_RETRY)
+          goto retry;
+        else
+          return;
+      }
 
       if (option_bool(OPT_NO_REBIND))
 	check_rebind = !(forward->flags & FREC_NOREBIND);
