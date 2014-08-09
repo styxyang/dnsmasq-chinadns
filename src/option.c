@@ -458,6 +458,8 @@ static struct {
   { LOPT_QUIET_DHCP6, OPT_QUIET_DHCP6, NULL, gettext_noop("Do not log routine DHCPv6."), NULL },
   { LOPT_QUIET_RA, OPT_QUIET_RA, NULL, gettext_noop("Do not log RA."), NULL },
   { LOPT_LOCAL_SERVICE, OPT_LOCAL_SERVICE, NULL, gettext_noop("Accept queries only from directly-connected networks"), NULL },
+  { LOPT_SPURIOUS_FILE, ARG_DUP, "<path>", gettext_noop("Specify path to spurious-ip file."), NULL }, 
+  { LOPT_SPURIOUS_IP, ARG_DUP, "<ipaddr>", gettext_noop("Specify spurious ip."), NULL },
   { 0, 0, NULL, NULL, NULL }
 }; 
 
