@@ -1261,7 +1261,12 @@ int check_for_local_domain(char *name, time_t now)
   struct ptr_record *ptr;
   struct naptr *naptr;
 
-  if ((crecp = cache_find_by_name(NULL, name, now, F_IPV4 | F_IPV6 | F_CNAME | F_DS | F_NO_RR)) &&
+  /* Note: the call to cache_find_by_name is intended to find any record which matches
+     ie A, AAAA, CNAME, DS. Because RRSIG records are marked by setting both F_DS and F_DNSKEY,
+     cache_find_by name ordinarily only returns records with an exact match on those bits (ie
+     for the call below, only DS records). The F_NSIGMATCH bit changes this behaviour */
+
+  if ((crecp = cache_find_by_name(NULL, name, now, F_IPV4 | F_IPV6 | F_CNAME | F_DS | F_NO_RR | F_NSIGMATCH)) &&
       (crecp->flags & (F_HOSTS | F_DHCP | F_CONFIG)))
     return 1;
   
@@ -1329,6 +1334,43 @@ int check_for_bogus_wildcard(struct dns_header *header, size_t qlen, char *name,
 		
 		return 1;
 	      }
+	}
+      
+      if (!ADD_RDLEN(header, p, qlen, rdlen))
+	return 0;
+    }
+  
+  return 0;
+}
+
+int check_for_ignored_address(struct dns_header *header, size_t qlen, struct bogus_addr *baddr)
+{
+  unsigned char *p;
+  int i, qtype, qclass, rdlen;
+  struct bogus_addr *baddrp;
+
+  /* skip over questions */
+  if (!(p = skip_questions(header, qlen)))
+    return 0; /* bad packet */
+
+  for (i = ntohs(header->ancount); i != 0; i--)
+    {
+      if (!(p = skip_name(p, header, qlen, 10)))
+	return 0; /* bad packet */
+      
+      GETSHORT(qtype, p); 
+      GETSHORT(qclass, p);
+      p += 4; /* TTL */
+      GETSHORT(rdlen, p);
+      
+      if (qclass == C_IN && qtype == T_A)
+	{
+	  if (!CHECK_LEN(header, p, qlen, INADDRSZ))
+	    return 0;
+	  
+	  for (baddrp = baddr; baddrp; baddrp = baddrp->next)
+	    if (memcmp(&baddrp->addr, p, INADDRSZ) == 0)
+	      return 1;
 	}
       
       if (!ADD_RDLEN(header, p, qlen, rdlen))
@@ -1616,7 +1658,7 @@ size_t answer_request(struct dns_header *header, char *limit, size_t qlen,
 			      {
 				if (crecp->flags & F_NXDOMAIN)
 				  nxdomain = 1;
-				log_query(F_UPSTREAM, name, NULL, "secure no DS");	
+				log_query(F_UPSTREAM, name, NULL, "no DS");	
 			      }
 			    else if ((keydata = blockdata_retrieve(crecp->addr.ds.keydata, crecp->addr.ds.keylen, NULL)))
 			      {			     			      
@@ -1933,14 +1975,17 @@ size_t answer_request(struct dns_header *header, char *limit, size_t qlen,
 		  for (intr = daemon->int_names; intr; intr = intr->next)
 		    if (hostname_isequal(name, intr->name))
 		      {
-			ans = 1;
-			if (!dryrun)
-			  {
-			    
-			    for (addrlist = intr->addr; addrlist; addrlist = addrlist->next)
+			for (addrlist = intr->addr; addrlist; addrlist = addrlist->next)
 #ifdef HAVE_IPV6
-			      if (((addrlist->flags & ADDRLIST_IPV6) ? T_AAAA : T_A) == type)
+			  if (((addrlist->flags & ADDRLIST_IPV6) ? T_AAAA : T_A) == type)
 #endif
+			    {
+#ifdef HAVE_IPV6
+			      if (addrlist->flags & ADDRLIST_REVONLY)
+				continue;
+#endif	
+			      ans = 1;	
+			      if (!dryrun)
 				{
 				  gotit = 1;
 				  log_query(F_FORWARD | F_CONFIG | flag, name, &addrlist->addr, NULL);
@@ -1949,7 +1994,7 @@ size_t answer_request(struct dns_header *header, char *limit, size_t qlen,
 							  type == T_A ? "4" : "6", &addrlist->addr))
 				    anscount++;
 				}
-			  }
+			    }
 		      }
 		  
 		  if (!dryrun && !gotit)
